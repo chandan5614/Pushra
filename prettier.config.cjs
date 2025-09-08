@@ -1,2 +1,1 @@
-module.exports = require('@pushra/config/prettier').default
-
+module.exports = require('./packages/config/prettier.js')

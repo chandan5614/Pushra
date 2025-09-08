@@ -1,6 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import fs from 'fs';
+import path from 'path';
 
 @Controller('health')
 export class HealthController {
@@ -20,7 +22,20 @@ export class HealthController {
     } catch (e) {
       redis = 'error';
     }
-    return { status: 'ok', services: { db, redis } };
+    let version = '0.0.0';
+    try {
+      // Attempt to read root package.json version
+      const p = path.join(process.cwd(), '..', '..', 'package.json');
+      const raw = fs.readFileSync(p, 'utf8');
+      const pkg = JSON.parse(raw);
+      if (pkg && pkg.version) version = pkg.version;
+    } catch {}
+    return {
+      status: 'ok',
+      api: 'pushra',
+      version,
+      time: new Date().toISOString(),
+      services: { db, redis },
+    };
   }
 }
-

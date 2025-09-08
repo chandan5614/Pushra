@@ -6,8 +6,8 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./eslint": "./dist/eslint.js",
-    "./prettier": "./dist/prettier.js"
+    "./eslint": "./eslint.js",
+    "./prettier": "./prettier.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

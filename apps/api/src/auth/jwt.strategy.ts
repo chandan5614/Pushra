@@ -13,6 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // Pass sub and email through; do not query DB for roles
     return { sub: payload.sub, email: payload.email, role: payload.role };
   }
 }

@@ -2,8 +2,7 @@ import { Body, Controller, Get, Put, Query, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlotsService } from './slots.service';
 import { JwtAuthGuard } from '../auth/jwt.guard';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
+import { AdminGuard } from '../auth/admin.guard';
 
 function parseWindow(window: string) {
   // Accept "10-14" or "10:00-14:00"
@@ -18,8 +17,7 @@ function parseWindow(window: string) {
   };
 }
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('admin/slots')
 export class AdminSlotsController {
   constructor(private prisma: PrismaService, private slots: SlotsService) {}
@@ -67,4 +65,3 @@ export class AdminSlotsController {
     return { city, days };
   }
 }
-

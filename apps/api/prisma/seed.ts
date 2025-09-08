@@ -48,11 +48,10 @@ async function main() {
   ]
 
   for (const [i, p] of products.entries()) {
-    const product = await prisma.product.upsert({
-      where: { name: p.name },
-      update: {},
-      create: { name: p.name },
-    })
+    let product = await prisma.product.findFirst({ where: { name: p.name } })
+    if (!product) {
+      product = await prisma.product.create({ data: { name: p.name } })
+    }
     for (const [j, v] of p.variants.entries()) {
       const sku = `FLOW-${i + 1}-${j + 1}`
       const variant = await prisma.productVariant.upsert({

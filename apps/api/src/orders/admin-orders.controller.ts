@@ -1,11 +1,9 @@
 import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt.guard';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
+import { AdminGuard } from '../auth/admin.guard';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('admin/orders')
 export class AdminOrdersController {
   constructor(private prisma: PrismaService) {}
@@ -28,4 +26,3 @@ export class AdminOrdersController {
     return { ok: true, order }
   }
 }
-
