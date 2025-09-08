@@ -109,9 +109,13 @@ model DeliverySlot {
   id        String   @id @default(uuid())
   start     DateTime
   end       DateTime
+  city      String   @default("al-ain")
   capacity  Int      @default(100)
+  cutoffAt  DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([city, start, end], name: "city_start_end")
 }
 
 model Order {

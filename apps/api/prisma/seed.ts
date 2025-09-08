@@ -1,86 +1,105 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
   const user = await prisma.user.upsert({
     where: { email: 'test@pushra.local' },
     update: {},
     create: { email: 'test@pushra.local', name: 'Test User' },
-  });
+  })
 
-  // Addons
+  // Add-ons
   const addons = await prisma.$transaction([
     prisma.addon.upsert({
-      where: { id: 'addon-1' },
+      where: { id: 'vase' },
       update: {},
-      create: { id: 'addon-1', name: 'Extra Sauce', priceCents: 50 },
+      create: { id: 'vase', name: 'Glass Vase', priceCents: 1500 },
     }),
     prisma.addon.upsert({
-      where: { id: 'addon-2' },
+      where: { id: 'ribbon' },
       update: {},
-      create: { id: 'addon-2', name: 'Gift Wrap', priceCents: 199 },
+      create: { id: 'ribbon', name: 'Premium Ribbon', priceCents: 500 },
     }),
-  ]);
+    prisma.addon.upsert({
+      where: { id: 'card' },
+      update: {},
+      create: { id: 'card', name: 'Greeting Card', priceCents: 300 },
+    }),
+  ])
 
-  const productsData = [
-    { name: 'Alpha Snack', variants: [{ title: 'Small', priceCents: 299 }, { title: 'Large', priceCents: 499 }] },
-    { name: 'Bravo Drink', variants: [{ title: 'Bottle', priceCents: 199 }] },
-    { name: 'Charlie Bar', variants: [{ title: 'Single', priceCents: 149 }, { title: 'Pack of 6', priceCents: 799 }] },
-    { name: 'Delta Mix', variants: [{ title: 'Regular', priceCents: 599 }] },
-    { name: 'Echo Chips', variants: [{ title: 'Classic', priceCents: 249 }, { title: 'Spicy', priceCents: 259 }] },
-    { name: 'Foxtrot Cookie', variants: [{ title: 'Choco', priceCents: 299 }] },
-  ];
+  // Products
+  const products = [
+    { name: 'Roses Bouquet', variants: [
+      { title: 'Classic', priceCents: 5000 },
+      { title: 'Premium', priceCents: 8000 },
+      { title: 'Deluxe', priceCents: 12000 },
+    ]},
+    { name: 'Jasmine Bouquet', variants: [
+      { title: 'Classic', priceCents: 4500 },
+      { title: 'Premium', priceCents: 7000 },
+      { title: 'Deluxe', priceCents: 10000 },
+    ]},
+    { name: 'Mixed Flowers', variants: [
+      { title: 'Classic', priceCents: 6000 },
+      { title: 'Premium', priceCents: 9000 },
+      { title: 'Deluxe', priceCents: 13000 },
+    ]},
+  ]
 
-  const createdProducts = [] as any[];
-  for (const [i, p] of productsData.entries()) {
-    const product = await prisma.product.create({ data: { name: p.name } });
+  for (const [i, p] of products.entries()) {
+    const product = await prisma.product.upsert({
+      where: { name: p.name },
+      update: {},
+      create: { name: p.name },
+    })
     for (const [j, v] of p.variants.entries()) {
-      const sku = `SKU-${i + 1}-${j + 1}-${Math.floor(Math.random() * 1000)}`;
-      const variant = await prisma.productVariant.create({
-        data: {
+      const sku = `FLOW-${i + 1}-${j + 1}`
+      const variant = await prisma.productVariant.upsert({
+        where: { sku },
+        update: { priceCents: v.priceCents, title: v.title, productId: product.id },
+        create: {
           productId: product.id,
           sku,
           title: v.title,
           priceCents: v.priceCents,
-          addons: { create: { addonId: addons[0].id } },
+          addons: { create: [{ addonId: addons[0].id }, { addonId: addons[1].id }, { addonId: addons[2].id }] },
         },
-      });
-      await prisma.inventoryLot.create({ data: { productVariantId: variant.id, quantity: 100 } });
+      })
+      await prisma.inventoryLot.upsert({
+        where: { id: `lot-${sku}` },
+        update: { quantity: 100 },
+        create: { id: `lot-${sku}`, productVariantId: variant.id, quantity: 100 },
+      })
     }
-    createdProducts.push(product);
   }
 
   // Delivery slots for today
-  const now = new Date();
-  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const ranges = [
+  const now = new Date()
+  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const windows = [
     [10, 14],
     [14, 18],
     [18, 22],
-  ];
-  for (const [start, end] of ranges) {
-    const s = new Date(base);
-    s.setHours(start, 0, 0, 0);
-    const e = new Date(base);
-    e.setHours(end, 0, 0, 0);
+  ]
+  for (const [sh, eh] of windows) {
+    const s = new Date(base); s.setHours(sh, 0, 0, 0)
+    const e = new Date(base); e.setHours(eh, 0, 0, 0)
     await prisma.deliverySlot.upsert({
-      where: { id: `slot-${start}-${end}` },
-      update: { start: s, end: e },
-      create: { id: `slot-${start}-${end}`, start: s, end: e, capacity: 100 },
-    });
+      where: { city_start_end: { city: 'al-ain', start: s, end: e } },
+      update: { capacity: 100 },
+      create: { city: 'al-ain', start: s, end: e, capacity: 100 },
+    })
   }
 
-  console.log('Seeded user:', user.email);
-  console.log('Seeded products:', createdProducts.length);
+  console.log('Seeded user:', user.email)
 }
 
 main()
   .catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error(e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
-
+    await prisma.$disconnect()
+  })

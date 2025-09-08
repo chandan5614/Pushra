@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { EmailService } from '../notifications/email.service';
 
 function maskEmail(email: string) {
   const [u, d] = email.split('@');
@@ -20,6 +21,7 @@ export class AuthService {
     private jwt: JwtService,
     private prisma: PrismaService,
     private redis: RedisService,
+    private email: EmailService,
   ) {}
 
   async requestMagicLink(email: string) {
@@ -27,10 +29,13 @@ export class AuthService {
     const ttl = 10 * 60; // 10 minutes
     await this.redis.set(`magic:${token}`, email, ttl);
     const publicUrl = process.env.MAGICLINK_PUBLIC_URL || 'http://localhost:3000';
-    const devLink = `${publicUrl}/api/auth/verify?token=${token}`;
+    const link = `${publicUrl}/auth/callback?token=${token}`;
+    try {
+      await this.email.send(email, 'Your Pushra sign-in link', `Sign in by clicking: ${link}`);
+    } catch {}
     return {
       message: `Magic link sent to ${maskEmail(email)}`,
-      devLink: process.env.NODE_ENV !== 'production' ? devLink : undefined,
+      devLink: process.env.NODE_ENV !== 'production' ? link : undefined,
     };
   }
 
@@ -43,7 +48,8 @@ export class AuthService {
       create: { email },
       update: {},
     });
-    const access_token = await this.jwt.signAsync({ sub: user.id, email: user.email });
+    const role = isAdminEmail(user.email) ? 'admin' : 'user';
+    const access_token = await this.jwt.signAsync({ sub: user.id, email: user.email, role });
     return { access_token };
   }
 
@@ -63,7 +69,8 @@ export class AuthService {
       create: { email },
       update: {},
     });
-    const access_token = await this.jwt.signAsync({ sub: user.id, email: user.email });
+    const role = isAdminEmail(user.email) ? 'admin' : 'user';
+    const access_token = await this.jwt.signAsync({ sub: user.id, email: user.email, role });
     return { access_token };
   }
 }
@@ -81,3 +88,7 @@ function randomDigits(n: number) {
   return s;
 }
 
+function isAdminEmail(email: string) {
+  const list = (process.env.ADMIN_EMAILS || '').split(',').map((s) => s.trim()).filter(Boolean);
+  return list.includes(email);
+}

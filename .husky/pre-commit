@@ -1,0 +1,7 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Build shared config then run ESLint in API and format repo
+pnpm --filter @pushra/config build || exit 1
+pnpm --filter @pushra/api lint || exit 1
+pnpm -w format || exit 1

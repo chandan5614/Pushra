@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ dev, main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: Create API env
+        run: |
+          mkdir -p apps/api
+          cat > apps/api/.env << 'ENV'
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+          REDIS_URL=redis://localhost:6379
+          JWT_SECRET=change-me
+          MAGICLINK_PUBLIC_URL=http://localhost:3000
+          ENV
+      - name: Migrate + Seed
+        run: |
+          cd apps/api
+          pnpm prisma:dev
+          pnpm prisma:seed
+      - name: Run tests
+        run: pnpm -w test
+

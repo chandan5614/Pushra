@@ -3,8 +3,17 @@
   "private": true,
   "scripts": {
     "dev": "pnpm -r run dev",
+    "dev:all": "concurrently -k -n api,web -c yellow,cyan \"pnpm --filter @pushra/api dev\" \"pnpm --filter @pushra/web dev\"",
     "build": "pnpm -r run build",
     "lint": "pnpm -r run lint",
-    "format": "prettier -w ."
+    "format": "prettier -w .",
+    "test": "pnpm -r run test",
+    "seed": "pnpm --filter @pushra/api prisma:seed",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "husky": "^9.0.11",
+    "prettier": "^3.3.3"
   }
 }

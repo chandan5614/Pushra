@@ -10,6 +10,7 @@ import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './health/health.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { HealthModule } from './health/health.module';
     PrismaModule,
     RedisModule,
     AuthModule,
+    EventsModule,
     UsersModule,
     CatalogModule,
     SlotsModule,
@@ -27,4 +29,3 @@ import { HealthModule } from './health/health.module';
   ],
 })
 export class AppModule {}
-

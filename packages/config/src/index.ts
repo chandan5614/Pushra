@@ -1,1 +1,1 @@
-
+export const hello = 'config'
