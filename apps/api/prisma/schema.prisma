@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum FulfillmentStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  name          String?
+  addresses     Address[]
+  orders        Order[]
+  subscriptions Subscription[]
+  tickets       Ticket[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  line1     String
+  line2     String?
+  city      String
+  state     String?
+  postal    String?
+  country   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String           @id @default(uuid())
+  name        String
+  description String?
+  active      Boolean          @default(true)
+  variants    ProductVariant[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id         String        @id @default(uuid())
+  productId  String
+  product    Product       @relation(fields: [productId], references: [id])
+  sku        String        @unique
+  title      String
+  priceCents Int
+  currency   String        @default("USD")
+  lots       InventoryLot[]
+  addons     ProductVariantAddon[]
+  orderItems OrderItem[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model Addon {
+  id         String                 @id @default(uuid())
+  name       String
+  priceCents Int
+  currency   String                 @default("USD")
+  variants   ProductVariantAddon[]
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+}
+
+model ProductVariantAddon {
+  variantId String
+  addonId   String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  addon     Addon          @relation(fields: [addonId], references: [id])
+
+  @@id([variantId, addonId])
+}
+
+model InventoryLot {
+  id             String         @id @default(uuid())
+  productVariantId String
+  variant        ProductVariant @relation(fields: [productVariantId], references: [id])
+  quantity       Int
+  receivedAt     DateTime       @default(now())
+  expiresAt      DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model DeliverySlot {
+  id        String   @id @default(uuid())
+  start     DateTime
+  end       DateTime
+  capacity  Int      @default(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id                 String             @id @default(uuid())
+  userId             String
+  user               User               @relation(fields: [userId], references: [id])
+  status             FulfillmentStatus  @default(PENDING)
+  items              OrderItem[]
+  payment            Payment?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model OrderItem {
+  id              String         @id @default(uuid())
+  orderId         String
+  order           Order          @relation(fields: [orderId], references: [id])
+  productVariantId String
+  variant         ProductVariant @relation(fields: [productVariantId], references: [id])
+  quantity        Int
+  unitPriceCents  Int
+  currency        String         @default("USD")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Payment {
+  id            String         @id @default(uuid())
+  orderId       String   @unique
+  order         Order          @relation(fields: [orderId], references: [id])
+  amountCents   Int
+  currency      String         @default("USD")
+  status        PaymentStatus  @default(PENDING)
+  provider      String
+  transactionId String?
+  refunds       Refund[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Refund {
+  id          String   @id @default(uuid())
+  paymentId   String
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+  amountCents Int
+  reason      String?
+  createdAt   DateTime @default(now())
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  plan      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Ticket {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  subject   String
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Promo {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  description  String?
+  discountPct  Int?
+  discountCents Int?
+  active       Boolean  @default(true)
+  validFrom    DateTime?
+  validTo      DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
