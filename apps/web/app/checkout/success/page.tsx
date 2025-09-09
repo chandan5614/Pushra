@@ -1,4 +1,4 @@
-"use client"
+'use client'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { getJSON } from '../../../lib/api'
@@ -32,9 +32,15 @@ export default function CheckoutSuccess() {
   return (
     <div className="space-y-3">
       <h1 className="text-2xl font-semibold">Payment successful</h1>
-      <p className="text-gray-600">Order code: <span className="font-mono">{code || '(unknown)'}</span></p>
-      <p className="text-gray-600">Status: <span className="font-mono">{status}</span></p>
-      <a href="/" className="underline">Back to home</a>
+      <p className="text-gray-600">
+        Order code: <span className="font-mono">{code || '(unknown)'}</span>
+      </p>
+      <p className="text-gray-600">
+        Status: <span className="font-mono">{status}</span>
+      </p>
+      <a href="/" className="underline">
+        Back to home
+      </a>
     </div>
   )
 }

@@ -12,7 +12,7 @@ export default function AuthCallbackPage() {
       setMsg('Missing token')
       return
     }
-    (async function run() {
+    ;(async function run() {
       const res = await fetch(`/api/auth/callback?token=${encodeURIComponent(token)}`)
       const j = await res.json()
       if (j?.ok) {

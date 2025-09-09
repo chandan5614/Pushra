@@ -37,6 +37,12 @@ export class PaymentsController {
       return { ok: false, error: 'rate_limited' }
     }
 
+    const legacySchema = z.object({
+      items: z.array(z.object({ variantId: z.string(), quantity: z.number().int().positive() })),
+      slotId: z.string(),
+      email: z.string().email().optional(),
+      orderCode: z.string().optional(),
+    })
     const schema = z.object({
       cart: z.object({
         items: z.array(
@@ -54,11 +60,14 @@ export class PaymentsController {
       email: z.string().email().optional(),
       orderCode: z.string().optional(),
     })
-    const parsed = schema.parse(body)
-    const items = parsed.cart.items.map((i) => ({ variantId: i.variantId, quantity: i.qty }))
-    const slotId = parsed.slotId
-    const orderCode = parsed.orderCode
-    const email = parsed.email
+    const legacy = legacySchema.safeParse(body)
+    const parsed = legacy.success ? null : schema.parse(body)
+    const items = legacy.success
+      ? legacy.data.items
+      : (parsed as z.infer<typeof schema>).cart.items.map((i) => ({ variantId: i.variantId, quantity: i.qty }))
+    const slotId = legacy.success ? legacy.data.slotId : (parsed as any).slotId
+    const orderCode = legacy.success ? legacy.data.orderCode : (parsed as any).orderCode
+    const email = legacy.success ? legacy.data.email : (parsed as any).email
 
     // Determine user
     let userId = req.user?.sub as string | undefined
@@ -74,7 +83,12 @@ export class PaymentsController {
         items,
         slotId,
         orderCode,
-        idempotencyKey: parsed.idempotencyKey,
+        idempotencyKey:
+          (legacy.success
+            ? (globalThis.crypto && typeof (globalThis.crypto as any).randomUUID === 'function'
+                ? (globalThis.crypto as any).randomUUID()
+                : Math.random().toString(36).slice(2))
+            : (parsed as any).idempotencyKey),
       },
     )
 

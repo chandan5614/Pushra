@@ -9,7 +9,10 @@ export class OrdersPublicController {
   @Get('status')
   async status(@Query('code') code?: string) {
     if (!code) return { ok: false, error: 'missing_code' }
-    const order = await this.prisma.order.findUnique({ where: { id: code }, include: { payment: true } })
+    const order = await this.prisma.order.findUnique({
+      where: { id: code },
+      include: { payment: true },
+    })
     if (!order) return { ok: false, error: 'not_found' }
     return {
       ok: true,
@@ -22,4 +25,3 @@ export class OrdersPublicController {
     }
   }
 }
-

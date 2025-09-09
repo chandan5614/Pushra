@@ -4,12 +4,11 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
-    "start": "node dist/src/main.js",
-    "lint": "eslint . --ext .ts",
-    "prisma:dev": "prisma migrate dev --name init",
+    "start": "node dist/main.js",
+    "test": "jest",
     "prisma:generate": "prisma generate",
-    "prisma:seed": "ts-node prisma/seed.ts",
-    "test": "jest"
+    "prisma:dev": "prisma migrate dev",
+    "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10",
@@ -26,7 +25,9 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^5",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "multer": "^1.4.5-lts.1",
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "@pushra/config": "workspace:*",
@@ -38,6 +39,8 @@
     "@types/jest": "^29",
     "@types/supertest": "^2.0.16",
     "@types/node": "^20",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.11",
     "@types/passport-jwt": "^3.0.13",
     "eslint": "^8",
     "dotenv": "^16.4.5",

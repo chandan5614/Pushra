@@ -6,4 +6,3 @@ export function getAttemptKey() {
   localStorage.setItem('checkout_attempt', v)
   return v
 }
-

@@ -9,9 +9,10 @@ import { PayTabsService } from './providers/paytabs.service'
 import { StripeService } from './providers/stripe.service'
 import { TestPaymentsService } from './providers/test.service'
 import { WebhooksController } from './webhooks.controller'
+import { DeliveriesModule } from '../deliveries/deliveries.module'
 
 @Module({
-  imports: [PrismaModule, SlotsModule, RedisModule, NotificationsModule],
+  imports: [PrismaModule, SlotsModule, RedisModule, NotificationsModule, DeliveriesModule],
   providers: [PaymentsService, PayTabsService, StripeService, TestPaymentsService],
   controllers: [PaymentsController, WebhooksController],
   exports: [PaymentsService],

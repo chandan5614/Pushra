@@ -108,6 +108,18 @@ async function main() {
     })
   }
 
+  // Courier (demo rider)
+  await prisma.courier.upsert({
+    where: { email: 'rider@pushra.local' },
+    update: {},
+    create: {
+      name: 'Pushra Rider',
+      email: 'rider@pushra.local',
+      phone: '+971500000001',
+      status: 'AVAILABLE',
+    },
+  })
+
   console.log('Seeded user:', user.email)
 }
 

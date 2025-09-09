@@ -11,6 +11,8 @@ import { PaymentsModule } from './payments/payments.module'
 import { NotificationsModule } from './notifications/notifications.module'
 import { HealthModule } from './health/health.module'
 import { EventsModule } from './events/events.module'
+import { DeliveriesModule } from './deliveries/deliveries.module'
+import { CouriersModule } from './couriers/couriers.module'
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { EventsModule } from './events/events.module'
     PaymentsModule,
     NotificationsModule,
     HealthModule,
+    DeliveriesModule,
+    CouriersModule,
   ],
 })
 export class AppModule {}

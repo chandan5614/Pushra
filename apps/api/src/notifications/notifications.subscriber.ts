@@ -17,10 +17,19 @@ export class NotificationsSubscriber implements OnModuleInit {
     this.events.on('order_confirmed', async ({ orderId }) => {
       const order = await this.prisma.order.findUnique({
         where: { id: orderId },
-        include: { user: true },
+        include: { user: true, delivery: true },
       })
       const to = order?.user?.email
-      if (to) await this.email.send(to, 'Order confirmed', `Order ${orderId} has been confirmed.`)
+      const base = process.env.PUBLIC_WEB_URL || 'http://localhost:3000'
+      const code = order?.delivery?.code
+      const track = code ? `${base}/t/${code}` : `${base}`
+      if (to) {
+        await this.email.send(
+          to,
+          'Order confirmed',
+          `Order ${orderId} has been confirmed. Track: ${track}`,
+        )
+      }
       // If we had phone numbers we'd send WA template too
     })
 

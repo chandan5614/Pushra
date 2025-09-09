@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service'
 import { RedisService } from '../redis/redis.service'
 import { EmailService } from '../notifications/email.service'
 import crypto from 'crypto'
+import { randomOTP } from '../utils/random'
 
 function maskEmail(email: string) {
   const [u, d] = email.split('@')
@@ -58,7 +59,7 @@ export class AuthService {
   }
 
   async requestOtp(phone: string) {
-    const code = process.env.NODE_ENV === 'production' ? randomDigits(6) : '123456'
+    const code = process.env.NODE_ENV === 'production' ? randomOTP() : '123456'
     await this.redis.set(`otp:${phone}`, code, 5 * 60)
     return { message: `OTP sent to ${maskPhone(phone)}` }
   }
@@ -85,11 +86,7 @@ function cryptoRandom(len: number) {
   return Buffer.from(bytes).toString('base64url')
 }
 
-function randomDigits(n: number) {
-  let s = ''
-  for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 10)
-  return s
-}
+// randomDigits replaced by randomOTP in ../utils/random
 
 function isAdminEmail(email: string) {
   const list = (process.env.ADMIN_EMAILS || '')

@@ -28,6 +28,8 @@ const SLA: Record<UiStatus, number> = {
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [dragId, setDragId] = useState<string | null>(null)
+  const [couriers, setCouriers] = useState<Array<{ id: string; name: string }>>([])
+  const [assigned, setAssigned] = useState<Record<string, string>>({})
 
   async function load() {
     const res = await fetch('/api/admin/orders', { cache: 'no-store' })
@@ -35,6 +37,10 @@ export default function AdminOrders() {
   }
   useEffect(() => {
     load()
+    ;(async () => {
+      const r = await fetch('/api/admin/couriers', { cache: 'no-store' })
+      if (r.ok) setCouriers(await r.json())
+    })()
   }, [])
 
   const grouped = useMemo(() => {
@@ -100,7 +106,40 @@ export default function AdminOrders() {
                     <div className="font-mono text-xs">{o.id.slice(0, 8)}</div>
                     <Age createdAt={o.createdAt} status={c} />
                   </div>
-                  <div className="text-xs text-gray-600">{mapFromServer(o.status)}</div>
+                  <div className="text-xs text-gray-600 flex items-center justify-between gap-2">
+                    <span>{mapFromServer(o.status)}</span>
+                    {assigned[o.id] && (
+                      <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                        {assigned[o.id]}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <select
+                      className="w-full text-xs border rounded px-2 py-1 bg-white"
+                      defaultValue=""
+                      onChange={async (e) => {
+                        const courierId = e.currentTarget.value
+                        if (!courierId) return
+                        const resp = await fetch(`/api/admin/orders/${o.id}/assign`, {
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({ courierId }),
+                        })
+                        if (resp.ok) {
+                          const chosen = couriers.find((c) => c.id === courierId)
+                          setAssigned((m) => ({ ...m, [o.id]: chosen?.name || 'Assigned' }))
+                        }
+                      }}
+                    >
+                      <option value="">Assign courier…</option>
+                      {couriers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               ))}
             </div>

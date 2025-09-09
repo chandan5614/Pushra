@@ -40,43 +40,43 @@ export default function CheckoutPage() {
         if (data.provider === 'stripe' && data.clientSecret) {
           const pk = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
           if (!pk) {
-          console.warn('Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY; simulating success')
+            console.warn('Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY; simulating success')
+            router.push(`/checkout/success?code=${encodeURIComponent(data.orderCode || '')}`)
+            return
+          }
+          const { loadStripe } = await import('@stripe/stripe-js')
+          const stripe = await loadStripe(pk)
+          if (!stripe) throw new Error('Stripe failed to load')
+          // In a real flow, you would collect card details via Elements. For stub, confirm without payment method.
+          const result = await stripe.retrievePaymentIntent(data.clientSecret)
+          if (result.error) throw new Error(result.error.message)
           router.push(`/checkout/success?code=${encodeURIComponent(data.orderCode || '')}`)
           return
         }
-        const { loadStripe } = await import('@stripe/stripe-js')
-        const stripe = await loadStripe(pk)
-        if (!stripe) throw new Error('Stripe failed to load')
-        // In a real flow, you would collect card details via Elements. For stub, confirm without payment method.
-        const result = await stripe.retrievePaymentIntent(data.clientSecret)
-        if (result.error) throw new Error(result.error.message)
-        router.push(`/checkout/success?code=${encodeURIComponent(data.orderCode || '')}`)
-        return
-      }
-      if (data.provider === 'test' && data.redirectUrl) {
-        window.location.href = data.redirectUrl
-        return
-      }
-      setMessage('No supported provider response.')
-    } catch (e: any) {
-      console.error(e)
-      setMessage(e?.message || 'Checkout failed')
-      // Attempt to release slot if we have an order code
-      try {
-        const orderCode = localStorage.getItem('orderCode')
-        if (orderCode) {
-          await postJSON('/slots/release', { orderCode })
+        if (data.provider === 'test' && data.redirectUrl) {
+          window.location.href = data.redirectUrl
+          return
         }
-      } catch (e) {
-        console.warn('slot release failed')
+        setMessage('No supported provider response.')
+      } catch (e: any) {
+        console.error(e)
+        setMessage(e?.message || 'Checkout failed')
+        // Attempt to release slot if we have an order code
+        try {
+          const orderCode = localStorage.getItem('orderCode')
+          if (orderCode) {
+            await postJSON('/slots/release', { orderCode })
+          }
+        } catch (e) {
+          console.warn('slot release failed')
+        }
+        router.push('/checkout/fail?reason=init_failed')
+      } finally {
+        setBusy(false)
       }
-      router.push('/checkout/fail?reason=init_failed')
-    } finally {
-      setBusy(false)
-    }
-  },
-  [cart, slotId, city],
-)
+    },
+    [cart, slotId, city],
+  )
 
   return (
     <div className="space-y-4">

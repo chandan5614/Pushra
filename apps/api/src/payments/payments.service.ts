@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { SlotsService } from '../slots/slots.service'
 import { DomainEvents } from '../events/domain-events.service'
+import { DeliveriesService } from '../deliveries/deliveries.service'
 import { PaymentStatus } from '@prisma/client'
 
 @Injectable()
@@ -10,6 +11,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private slots: SlotsService,
     private events: DomainEvents,
+    private deliveries: DeliveriesService,
   ) {}
 
   provider(): 'stripe' | 'paytabs' | 'test' {
@@ -91,6 +93,7 @@ export class PaymentsService {
       data: { status: PaymentStatus.PAID, intentId, raw },
     })
     await this.prisma.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED' as any } })
+    try { await this.deliveries.createForOrder(orderId) } catch {}
     this.events.emit('order_confirmed', { orderId })
     return payment
   }
@@ -114,6 +117,7 @@ export class PaymentsService {
       where: { id: payment.orderId },
       data: { status: 'CONFIRMED' as any },
     })
+    try { await this.deliveries.createForOrder(payment.orderId) } catch {}
     this.events.emit('order_confirmed', { orderId: payment.orderId })
     return payment
   }

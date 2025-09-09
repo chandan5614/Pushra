@@ -26,6 +26,23 @@ enum FulfillmentStatus {
   CANCELLED
 }
 
+enum DeliveryStatus {
+  UNASSIGNED
+  ASSIGNED
+  ACCEPTED
+  PICKUP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  CANCELED
+}
+
+enum CourierStatus {
+  INACTIVE
+  AVAILABLE
+  ON_DUTY
+}
+
 model User {
   id            String          @id @default(uuid())
   email         String          @unique
@@ -128,6 +145,7 @@ model Order {
   status             FulfillmentStatus  @default(PENDING)
   items              OrderItem[]
   payment            Payment?
+  delivery           Delivery?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 }
@@ -202,4 +220,53 @@ model Promo {
   validTo      DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Courier {
+  id          String        @id @default(cuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  name        String
+  email       String        @unique
+  phone       String?
+  status      CourierStatus @default(INACTIVE)
+  secret      String?
+  lastLoginAt DateTime?
+  deliveries  Delivery[]
+}
+
+model Delivery {
+  id            String          @id @default(cuid())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  code          String          @unique
+  orderId       String          @unique
+  order         Order           @relation(fields: [orderId], references: [id])
+  courierId     String?
+  courier       Courier?        @relation(fields: [courierId], references: [id])
+  status        DeliveryStatus  @default(UNASSIGNED)
+  acceptedAt    DateTime?
+  pickupAt      DateTime?
+  outAt         DateTime?
+  deliveredAt   DateTime?
+  failedAt      DateTime?
+  failedReason  String?
+  otp           String?
+  proofPhotoUrl String?
+  recipientName String?
+  recipientNote String?
+  lastLat       Float?
+  lastLng       Float?
+  events        TrackingEvent[]
+}
+
+model TrackingEvent {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  deliveryId String
+  delivery   Delivery @relation(fields: [deliveryId], references: [id])
+  type       String
+  note       String?
+  lat        Float?
+  lng        Float?
 }
