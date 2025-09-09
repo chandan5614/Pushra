@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { JwtAuthGuard } from '../auth/jwt.guard';
-import { AdminGuard } from '../auth/admin.guard';
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common'
+import { PrismaService } from '../prisma/prisma.service'
+import { JwtAuthGuard } from '../auth/jwt.guard'
+import { AdminGuard } from '../auth/admin.guard'
 
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('admin/orders')

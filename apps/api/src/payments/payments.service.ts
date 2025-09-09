@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { SlotsService } from '../slots/slots.service';
-import { DomainEvents } from '../events/domain-events.service';
-import { PaymentStatus } from '@prisma/client';
+import { Injectable } from '@nestjs/common'
+import { PrismaService } from '../prisma/prisma.service'
+import { SlotsService } from '../slots/slots.service'
+import { DomainEvents } from '../events/domain-events.service'
+import { PaymentStatus } from '@prisma/client'
 
 @Injectable()
 export class PaymentsService {
@@ -24,7 +24,9 @@ export class PaymentsService {
   async computeTotals(items: { variantId: string; quantity: number }[]) {
     let amountCents = 0
     const currency = 'AED'
-    const variants = await this.prisma.productVariant.findMany({ where: { id: { in: items.map((i) => i.variantId) } } })
+    const variants = await this.prisma.productVariant.findMany({
+      where: { id: { in: items.map((i) => i.variantId) } },
+    })
     const byId = new Map(variants.map((v) => [v.id, v] as const))
     for (const item of items) {
       const v = byId.get(item.variantId)
@@ -38,11 +40,11 @@ export class PaymentsService {
   }
 
   async createOrderAndPayment(params: {
-    userId: string;
-    items: { variantId: string; quantity: number }[];
-    slotId: string;
-    orderCode?: string;
-    idempotencyKey: string;
+    userId: string
+    items: { variantId: string; quantity: number }[]
+    slotId: string
+    orderCode?: string
+    idempotencyKey: string
   }) {
     const { userId, items, slotId, idempotencyKey } = params
     const { amountCents, currency } = await this.computeTotals(items)
@@ -84,22 +86,34 @@ export class PaymentsService {
   }
 
   async markPaidByOrder(orderId: string, intentId?: string, raw?: any) {
-    const payment = await this.prisma.payment.update({ where: { orderId }, data: { status: PaymentStatus.PAID, intentId, raw } })
+    const payment = await this.prisma.payment.update({
+      where: { orderId },
+      data: { status: PaymentStatus.PAID, intentId, raw },
+    })
     await this.prisma.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED' as any } })
     this.events.emit('order_confirmed', { orderId })
     return payment
   }
 
   async markFailedByOrder(orderId: string, raw?: any) {
-    const payment = await this.prisma.payment.update({ where: { orderId }, data: { status: PaymentStatus.FAILED, raw } })
+    const payment = await this.prisma.payment.update({
+      where: { orderId },
+      data: { status: PaymentStatus.FAILED, raw },
+    })
     // Release slot hold keyed by orderId if present
     await this.slots.releaseSlot(orderId)
     return payment
   }
 
   async markPaidById(paymentId: string) {
-    const payment = await this.prisma.payment.update({ where: { id: paymentId }, data: { status: PaymentStatus.PAID } })
-    await this.prisma.order.update({ where: { id: payment.orderId }, data: { status: 'CONFIRMED' as any } })
+    const payment = await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: { status: PaymentStatus.PAID },
+    })
+    await this.prisma.order.update({
+      where: { id: payment.orderId },
+      data: { status: 'CONFIRMED' as any },
+    })
     this.events.emit('order_confirmed', { orderId: payment.orderId })
     return payment
   }

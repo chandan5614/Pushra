@@ -8,4 +8,3 @@ export class TestPaymentsService {
     return { redirectUrl }
   }
 }
-

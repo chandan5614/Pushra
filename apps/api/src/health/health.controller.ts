@@ -1,34 +1,37 @@
-import { Controller, Get } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { RedisService } from '../redis/redis.service';
-import fs from 'fs';
-import path from 'path';
+import { Controller, Get } from '@nestjs/common'
+import { PrismaService } from '../prisma/prisma.service'
+import { RedisService } from '../redis/redis.service'
+import fs from 'fs'
+import path from 'path'
 
 @Controller('health')
 export class HealthController {
-  constructor(private prisma: PrismaService, private redis: RedisService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
   @Get()
   async check() {
-    let db = 'ok';
-    let redis = 'ok';
+    let db = 'ok'
+    let redis = 'ok'
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.prisma.$queryRaw`SELECT 1`
     } catch (e) {
-      db = 'error';
+      db = 'error'
     }
     try {
-      await this.redis.ping();
+      await this.redis.ping()
     } catch (e) {
-      redis = 'error';
+      redis = 'error'
     }
-    let version = '0.0.0';
+    let version = '0.0.0'
     try {
       // Attempt to read root package.json version
-      const p = path.join(process.cwd(), '..', '..', 'package.json');
-      const raw = fs.readFileSync(p, 'utf8');
-      const pkg = JSON.parse(raw);
-      if (pkg && pkg.version) version = pkg.version;
+      const p = path.join(process.cwd(), '..', '..', 'package.json')
+      const raw = fs.readFileSync(p, 'utf8')
+      const pkg = JSON.parse(raw)
+      if (pkg && pkg.version) version = pkg.version
     } catch (e) {
       version = '0.0.0'
     }
@@ -37,13 +40,13 @@ export class HealthController {
       Boolean(process.env.PAYTABS_SERVER_KEY) ||
       Boolean(process.env.STRIPE_SECRET_KEY)
         ? 'ok'
-        : 'disabled';
+        : 'disabled'
     return {
       status: 'ok',
       api: 'pushra',
       version,
       time: new Date().toISOString(),
       services: { db, redis, payments },
-    };
+    }
   }
 }

@@ -1,5 +1,5 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { CatalogService } from './catalog.service';
+import { Controller, Get, Param } from '@nestjs/common'
+import { CatalogService } from './catalog.service'
 
 @Controller('products')
 export class ProductsController {
@@ -7,12 +7,11 @@ export class ProductsController {
 
   @Get()
   list() {
-    return this.catalog.listProducts();
+    return this.catalog.listProducts()
   }
 
   @Get(':id')
   get(@Param('id') id: string) {
-    return this.catalog.getProduct(id);
+    return this.catalog.getProduct(id)
   }
 }
-

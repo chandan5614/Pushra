@@ -10,4 +10,3 @@ export class CatalogAliasController {
     return this.catalog.listProducts()
   }
 }
-

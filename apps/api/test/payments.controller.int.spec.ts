@@ -47,4 +47,3 @@ describe('PaymentsController (integration)', () => {
     expect(res.body.clientSecret || res.body.redirectUrl).toBeTruthy()
   })
 })
-

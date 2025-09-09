@@ -5,7 +5,11 @@ import { PayTabsService } from './providers/paytabs.service'
 
 @Controller('webhooks')
 export class WebhooksController {
-  constructor(private payments: PaymentsService, private stripe: StripeService, private paytabs: PayTabsService) {}
+  constructor(
+    private payments: PaymentsService,
+    private stripe: StripeService,
+    private paytabs: PayTabsService,
+  ) {}
 
   @Get('test')
   async testPaid(@Query('pid') pid: string) {

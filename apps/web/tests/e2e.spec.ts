@@ -25,6 +25,7 @@ test('home → PDP → cart → checkout init', async ({ page }) => {
   const checkout = page.getByRole('button', { name: 'Checkout' })
   await checkout.click()
   // Either we see Stripe clientSecret or redirect occurs; allow a brief wait
-  await expect(page.locator('text=Stripe clientSecret').or(page.locator('text=Checkout started'))).toBeVisible({ timeout: 10_000 })
+  await expect(
+    page.locator('text=Stripe clientSecret').or(page.locator('text=Checkout started')),
+  ).toBeVisible({ timeout: 10_000 })
 })
-

@@ -30,21 +30,30 @@ async function main() {
 
   // Products
   const products = [
-    { name: 'Roses Bouquet', variants: [
-      { title: 'Classic', priceCents: 5000 },
-      { title: 'Premium', priceCents: 8000 },
-      { title: 'Deluxe', priceCents: 12000 },
-    ]},
-    { name: 'Jasmine Bouquet', variants: [
-      { title: 'Classic', priceCents: 4500 },
-      { title: 'Premium', priceCents: 7000 },
-      { title: 'Deluxe', priceCents: 10000 },
-    ]},
-    { name: 'Mixed Flowers', variants: [
-      { title: 'Classic', priceCents: 6000 },
-      { title: 'Premium', priceCents: 9000 },
-      { title: 'Deluxe', priceCents: 13000 },
-    ]},
+    {
+      name: 'Roses Bouquet',
+      variants: [
+        { title: 'Classic', priceCents: 5000 },
+        { title: 'Premium', priceCents: 8000 },
+        { title: 'Deluxe', priceCents: 12000 },
+      ],
+    },
+    {
+      name: 'Jasmine Bouquet',
+      variants: [
+        { title: 'Classic', priceCents: 4500 },
+        { title: 'Premium', priceCents: 7000 },
+        { title: 'Deluxe', priceCents: 10000 },
+      ],
+    },
+    {
+      name: 'Mixed Flowers',
+      variants: [
+        { title: 'Classic', priceCents: 6000 },
+        { title: 'Premium', priceCents: 9000 },
+        { title: 'Deluxe', priceCents: 13000 },
+      ],
+    },
   ]
 
   for (const [i, p] of products.entries()) {
@@ -62,7 +71,13 @@ async function main() {
           sku,
           title: v.title,
           priceCents: v.priceCents,
-          addons: { create: [{ addonId: addons[0].id }, { addonId: addons[1].id }, { addonId: addons[2].id }] },
+          addons: {
+            create: [
+              { addonId: addons[0].id },
+              { addonId: addons[1].id },
+              { addonId: addons[2].id },
+            ],
+          },
         },
       })
       await prisma.inventoryLot.upsert({
@@ -82,8 +97,10 @@ async function main() {
     [18, 22],
   ]
   for (const [sh, eh] of windows) {
-    const s = new Date(base); s.setHours(sh, 0, 0, 0)
-    const e = new Date(base); e.setHours(eh, 0, 0, 0)
+    const s = new Date(base)
+    s.setHours(sh, 0, 0, 0)
+    const e = new Date(base)
+    e.setHours(eh, 0, 0, 0)
     await prisma.deliverySlot.upsert({
       where: { city_start_end: { city: 'al-ain', start: s, end: e } },
       update: { capacity: 100 },
