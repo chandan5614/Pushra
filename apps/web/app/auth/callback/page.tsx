@@ -9,7 +9,7 @@ export default function AuthCallbackPage() {
   useEffect(()=>{
     const token = params.get('token')
     if (!token) { setMsg('Missing token'); return }
-    ;(async()=>{
+    (async function run(){
       const res = await fetch(`/api/auth/callback?token=${encodeURIComponent(token)}`)
       const j = await res.json()
       if (j?.ok) { setMsg('Signed in ✔'); setTimeout(()=>router.replace('/'), 600) }
@@ -18,4 +18,3 @@ export default function AuthCallbackPage() {
   },[params, router])
   return <div className="text-gray-700">{msg}</div>
 }
-

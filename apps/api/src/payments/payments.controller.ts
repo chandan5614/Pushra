@@ -1,11 +1,11 @@
-import { Body, Controller, Headers, Post, Req } from '@nestjs/common';
+import { Body, Controller, Post, Req } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlotsService } from '../slots/slots.service';
 import { PayTabsService } from './providers/paytabs.service';
 import { StripeService } from './providers/stripe.service';
 import { TestPaymentsService } from './providers/test.service';
-import { JwtAuthGuard } from '../auth/jwt.guard';
+// JwtAuthGuard imported elsewhere where needed; not used here
 import { z } from 'zod'
 
 @Controller()
@@ -68,17 +68,17 @@ export class PaymentsController {
     const provider = this.payments.provider();
     if (provider === 'stripe') {
       const pi = await this.stripe.createPaymentIntent(amountCents, currency, { orderId });
-      return { provider, orderId, amountCents, currency, clientSecret: pi.clientSecret, paymentId };
+      return { provider, orderId, orderCode: orderId, amountCents, currency, clientSecret: pi.clientSecret, paymentId };
     } else {
       if (provider === 'paytabs') {
         const base = process.env.PUBLIC_WEB_URL || 'http://localhost:3000'
         const returnUrl = `${base}/checkout/return`
         const callbackUrl = `${process.env.PUBLIC_API_URL || 'http://localhost:3001'}/webhooks/paytabs`
         const session = await this.paytabs.createPayment(amountCents, currency, { orderId, returnUrl, callbackUrl })
-        return { provider, orderId, amountCents, currency, redirectUrl: session.redirectUrl, paymentId }
+        return { provider, orderId, orderCode: orderId, amountCents, currency, redirectUrl: session.redirectUrl, paymentId }
       } else {
         const res = await this.testPay.createPayment({ amountCents, currency, paymentId: paymentId! })
-        return { provider, orderId, amountCents, currency, redirectUrl: res.redirectUrl, paymentId }
+        return { provider, orderId, orderCode: orderId, amountCents, currency, redirectUrl: res.redirectUrl, paymentId }
       }
     }
   }

@@ -8,7 +8,7 @@ function parseWindow(window: string) {
   // Accept "10-14" or "10:00-14:00"
   const m = window.match(/^(\d{1,2})(?::?(\d{2}))?-(\d{1,2})(?::?(\d{2}))?$/);
   if (!m) throw new Error('Invalid window format');
-  const [_, h1, m1, h2, m2] = m;
+  const [, h1, m1, h2, m2] = m;
   return {
     startHour: parseInt(h1, 10),
     startMin: m1 ? parseInt(m1, 10) : 0,

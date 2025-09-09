@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 export class PayTabsService {
   async createPayment(amountCents: number, currency: string, params: { orderId: string; returnUrl?: string; callbackUrl?: string }) {
     // Placeholder: integrate with PayTabs API. For now, synthesize a redirect URL.
+    void amountCents; void currency; void params
     const reference = `PT-${Date.now()}-${Math.floor(Math.random() * 1000)}`
     const redirectUrl = `${process.env.PAYTABS_BASE_URL || 'https://secure.paytabs.com'}/pay/${reference}`
     return { reference, redirectUrl }

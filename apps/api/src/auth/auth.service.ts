@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../notifications/email.service';
+import crypto from 'crypto'
 
 function maskEmail(email: string) {
   const [u, d] = email.split('@');
@@ -32,7 +33,10 @@ export class AuthService {
     const link = `${publicUrl}/auth/callback?token=${token}`;
     try {
       await this.email.send(email, 'Your Pushra sign-in link', `Sign in by clicking: ${link}`);
-    } catch {}
+    } catch (e) {
+      // non-fatal: email adapter not configured
+      console.warn('email send failed', e)
+    }
     return {
       message: `Magic link sent to ${maskEmail(email)}`,
       devLink: process.env.NODE_ENV !== 'production' ? link : undefined,
@@ -76,10 +80,9 @@ export class AuthService {
 }
 
 function cryptoRandom(len: number) {
-  const bytes = new Uint8Array(len);
-  // Node.js global crypto
-  require('crypto').randomFillSync(bytes);
-  return Buffer.from(bytes).toString('base64url');
+  const bytes = new Uint8Array(len)
+  crypto.randomFillSync(bytes)
+  return Buffer.from(bytes).toString('base64url')
 }
 
 function randomDigits(n: number) {

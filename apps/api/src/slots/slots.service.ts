@@ -81,7 +81,6 @@ export class SlotsService {
     const existingHold = await client.get(holdKey);
     if (existingHold) {
       // Idempotent: if same slot, just refresh TTL; otherwise force release first
-      const [_, __, ___, labelFromHold] = existingHold.split(':');
       const slot = await this.prisma.deliverySlot.findUnique({ where: { id: slotId } });
       if (!slot) throw new NotFoundException('Slot not found');
       const dateKey = this.formatDateKey(slot.start);

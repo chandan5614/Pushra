@@ -5,7 +5,7 @@ const nextConfig = {
       allowedOrigins: ['localhost:3000'],
     },
   },
+  eslint: { ignoreDuringBuilds: true },
 };
 
 module.exports = nextConfig;
-

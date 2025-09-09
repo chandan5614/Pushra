@@ -6,7 +6,7 @@ export default function CartPage() {
   const [email, setEmail] = useState('test@pushra.local')
   const [slotId, setSlotId] = useState('')
   const [slots, setSlots] = useState<any[]>([])
-  const [city, setCity] = useState('al-ain')
+  const [city] = useState('al-ain')
   const [date, setDate] = useState<string>(()=>new Date().toISOString().slice(0,10))
   const [msg, setMsg] = useState('')
 
@@ -24,17 +24,12 @@ export default function CartPage() {
     run()
   },[city, date])
 
-  async function checkout(){
-    setMsg('Starting checkout...')
-    const res = await fetch('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ items: cart, slotId, email }) })
-    const data = await res.json()
-    if (data?.provider === 'stripe') {
-      setMsg(`Stripe clientSecret: ${data.clientSecret}`)
-    } else if (data?.redirectUrl) {
-      window.location.href = data.redirectUrl
-    } else {
-      setMsg('Checkout started')
-    }
+  useEffect(()=>{ if (slotId) localStorage.setItem('slotId', slotId) }, [slotId])
+  useEffect(()=>{ if (city) localStorage.setItem('city', city) }, [city])
+
+  function goCheckout(){
+    setMsg('Proceeding to checkout...')
+    window.location.href = '/checkout'
   }
 
   return (
@@ -61,10 +56,9 @@ export default function CartPage() {
         </div>
       </div>
       <div className="mt-4">
-        <button className="px-4 py-2 rounded bg-black text-white" onClick={checkout} disabled={!slotId || cart.length===0}>Checkout</button>
+        <button className="px-4 py-2 rounded bg-black text-white" onClick={goCheckout} disabled={!slotId || cart.length===0}>Checkout</button>
       </div>
       {msg && <div className="mt-3 text-sm text-gray-600">{msg}</div>}
     </div>
   )
 }
-

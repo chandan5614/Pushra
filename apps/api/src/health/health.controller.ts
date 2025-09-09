@@ -29,7 +29,9 @@ export class HealthController {
       const raw = fs.readFileSync(p, 'utf8');
       const pkg = JSON.parse(raw);
       if (pkg && pkg.version) version = pkg.version;
-    } catch {}
+    } catch (e) {
+      version = '0.0.0'
+    }
     const payments =
       process.env.ALLOW_TEST_PAYMENTS === 'true' ||
       Boolean(process.env.PAYTABS_SERVER_KEY) ||
