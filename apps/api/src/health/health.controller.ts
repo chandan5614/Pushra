@@ -30,12 +30,18 @@ export class HealthController {
       const pkg = JSON.parse(raw);
       if (pkg && pkg.version) version = pkg.version;
     } catch {}
+    const payments =
+      process.env.ALLOW_TEST_PAYMENTS === 'true' ||
+      Boolean(process.env.PAYTABS_SERVER_KEY) ||
+      Boolean(process.env.STRIPE_SECRET_KEY)
+        ? 'ok'
+        : 'disabled';
     return {
       status: 'ok',
       api: 'pushra',
       version,
       time: new Date().toISOString(),
-      services: { db, redis },
+      services: { db, redis, payments },
     };
   }
 }

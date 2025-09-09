@@ -1,10 +1,12 @@
-import { Body, Controller, Headers, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Headers, Post, Req } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlotsService } from '../slots/slots.service';
 import { PayTabsService } from './providers/paytabs.service';
 import { StripeService } from './providers/stripe.service';
+import { TestPaymentsService } from './providers/test.service';
 import { JwtAuthGuard } from '../auth/jwt.guard';
+import { z } from 'zod'
 
 @Controller()
 export class PaymentsController {
@@ -14,16 +16,39 @@ export class PaymentsController {
     private slots: SlotsService,
     private paytabs: PayTabsService,
     private stripe: StripeService,
+    private testPay: TestPaymentsService,
   ) {}
+
+  private rate = new Map<string, { count: number; ts: number }>()
 
   @Post('checkout/init')
   async initCheckout(
     @Req() req: any,
-    @Body('items') items: { variantId: string; quantity: number }[],
-    @Body('slotId') slotId: string,
-    @Body('orderCode') orderCode?: string,
-    @Body('email') email?: string,
+  @Body() body: any,
   ) {
+    // Simple rate limit per IP per minute: max 10
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'ip'
+    const now = Date.now()
+    const ent = this.rate.get(ip) || { count: 0, ts: now }
+    if (now - ent.ts > 60_000) { ent.count = 0; ent.ts = now }
+    ent.count++
+    this.rate.set(ip, ent)
+    if (ent.count > 10) { return { ok: false, error: 'rate_limited' } }
+
+    const schema = z.object({
+      cart: z.object({ items: z.array(z.object({ variantId: z.string(), qty: z.number().int().positive(), sku: z.string().optional(), addons: z.any().optional() })) }),
+      slotId: z.string(),
+      city: z.string().default('al-ain'),
+      idempotencyKey: z.string().min(8),
+      email: z.string().email().optional(),
+      orderCode: z.string().optional(),
+    })
+    const parsed = schema.parse(body)
+    const items = parsed.cart.items.map(i => ({ variantId: i.variantId, quantity: i.qty }))
+    const slotId = parsed.slotId
+    const orderCode = parsed.orderCode
+    const email = parsed.email
+
     // Determine user
     let userId = req.user?.sub as string | undefined;
     if (!userId) {
@@ -32,26 +57,35 @@ export class PaymentsController {
       userId = u.id;
     }
 
-    const { orderId, amountCents, currency } = await this.payments.createOrderAndPayment({
+    const { orderId, amountCents, currency, paymentId } = await this.payments.createOrderAndPayment({
       userId,
       items,
       slotId,
       orderCode,
+      idempotencyKey: parsed.idempotencyKey,
     });
 
     const provider = this.payments.provider();
     if (provider === 'stripe') {
       const pi = await this.stripe.createPaymentIntent(amountCents, currency, { orderId });
-      return { provider, orderId, amountCents, currency, clientSecret: pi.clientSecret, paymentIntentId: pi.id };
+      return { provider, orderId, amountCents, currency, clientSecret: pi.clientSecret, paymentId };
     } else {
-      const session = await this.paytabs.createPayment(amountCents, currency, { orderId });
-      return { provider, orderId, amountCents, currency, redirectUrl: session.redirectUrl, reference: session.reference };
+      if (provider === 'paytabs') {
+        const base = process.env.PUBLIC_WEB_URL || 'http://localhost:3000'
+        const returnUrl = `${base}/checkout/return`
+        const callbackUrl = `${process.env.PUBLIC_API_URL || 'http://localhost:3001'}/webhooks/paytabs`
+        const session = await this.paytabs.createPayment(amountCents, currency, { orderId, returnUrl, callbackUrl })
+        return { provider, orderId, amountCents, currency, redirectUrl: session.redirectUrl, paymentId }
+      } else {
+        const res = await this.testPay.createPayment({ amountCents, currency, paymentId: paymentId! })
+        return { provider, orderId, amountCents, currency, redirectUrl: res.redirectUrl, paymentId }
+      }
     }
   }
 
   @Post('checkout/confirm')
   async confirmCheckout(
-    @Body('provider') provider: 'stripe' | 'paytabs',
+    @Body('provider') provider: 'stripe' | 'paytabs' | 'test',
     @Body('orderId') orderId: string,
     @Body('paymentIntentId') paymentIntentId?: string,
     @Body('reference') reference?: string,
@@ -59,34 +93,18 @@ export class PaymentsController {
     if (provider === 'stripe') {
       const ok = await this.stripe.confirmPayment(paymentIntentId!);
       if (!ok) throw new Error('Stripe confirmation failed');
-      await this.payments.markPaid(orderId, paymentIntentId);
+      await this.payments.markPaidByOrder(orderId, paymentIntentId);
     } else {
-      const ok = await this.paytabs.confirmPayment(reference!);
-      if (!ok) throw new Error('PayTabs confirmation failed');
-      await this.payments.markPaid(orderId, reference);
+      if (provider === 'paytabs') {
+        const ok = await this.paytabs.confirmPayment(reference!);
+        if (!ok) throw new Error('PayTabs confirmation failed');
+        await this.payments.markPaidByOrder(orderId, reference);
+      } else {
+        await this.payments.markPaidByOrder(orderId);
+      }
     }
     return { ok: true };
   }
 
-  @Post('webhooks/paytabs')
-  async paytabsWebhook(@Body() body: any, @Headers() headers: Record<string, string>) {
-    const verified = await this.paytabs.verifyWebhook(body, headers);
-    if (!verified) return { ok: false };
-    const { orderId, reference } = this.paytabs.parseWebhook(body);
-    await this.payments.markPaid(orderId, reference);
-    return { ok: true };
-  }
-
-  @Post('webhooks/stripe')
-  async stripeWebhook(@Body() body: any, @Headers('stripe-signature') sig: string) {
-    const event = await this.stripe.verifyWebhook(body, sig);
-    if (!event) return { ok: false };
-    if (event.type === 'payment_intent.succeeded') {
-      const orderId = event.data.object.metadata?.orderId as string;
-      const id = event.data.object.id as string;
-      if (orderId) await this.payments.markPaid(orderId, id);
-    }
-    return { ok: true };
-  }
+  // Webhooks moved to WebhooksController
 }
-

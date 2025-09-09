@@ -7,11 +7,13 @@ import { RedisModule } from '../redis/redis.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PayTabsService } from './providers/paytabs.service';
 import { StripeService } from './providers/stripe.service';
+import { TestPaymentsService } from './providers/test.service';
+import { WebhooksController } from './webhooks.controller';
 
 @Module({
   imports: [PrismaModule, SlotsModule, RedisModule, NotificationsModule],
-  providers: [PaymentsService, PayTabsService, StripeService],
-  controllers: [PaymentsController],
+  providers: [PaymentsService, PayTabsService, StripeService, TestPaymentsService],
+  controllers: [PaymentsController, WebhooksController],
   exports: [PaymentsService],
 })
 export class PaymentsModule {}
